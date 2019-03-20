@@ -3,16 +3,34 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
-{ 
+{
+    // Prefab brick
     public GameObject Brick;
     private GameObject currentBrick;
 
-    // Position of the bottom left most tile
-    private float BrickPositionX = -9.0f;
-    private float BrickPositionY = -4.0f;
+    private GameObject lastBrickClicked;
 
-    private GameObject[,] brickMap = new GameObject[8,8];
-    private GameObject[,] virtualBrickMap = new GameObject[8,8];
+    // Position of the bottom left most tile.
+    private float brickPositionX = -9.0f;
+    private float brickPositionY = -4.0f;
+    // Distance between cursor and selected brick.
+    private float cursorDistance;
+
+    private Vector3 worldMousePosition;
+    private Vector3 Direction;
+
+    private GameObject[,] brickMap = new GameObject[8, 8];
+    private GameObject[,] futureBrickMap = new GameObject[8, 8];
+
+    private int[,] colourMap = new int[8, 8];
+
+    public enum targetDirection
+    {
+        Up,
+        Down,
+        Left,
+        Right
+    }
 
     // Distance each tile needs to move. 
     // So we can * the increment number by column/row to get distance.
@@ -33,7 +51,7 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        //Debug.Log(Random.Range(1,6));
     }
 
     void newBoard()
@@ -42,7 +60,9 @@ public class GameManager : MonoBehaviour
         {
             for (int x = 0; x < 8; ++x)
             {
-                Position = new Vector3(BrickPositionX + (xIncrement * x), BrickPositionY + (yIncrement * y));
+                //colourMap[x, y] = Random.Range(1, 6);
+
+                Position = new Vector3(brickPositionX + (xIncrement * x), brickPositionY + (yIncrement * y));
 
                 // Instantiate a brick at incrementing positions and set colour.
                 currentBrick = Instantiate(Brick, Position, Quaternion.identity);
@@ -53,8 +73,107 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        virtualBrickMap = brickMap;
-        brickMap[3, 3].GetComponent<BrickManager>().deleteBrick();
-        //brickMap[3, 3] = null;
+        futureBrickMap = brickMap;
+    }
+
+    Vector2 getClickedCoords(GameObject clickedObject)
+    {
+        Vector2 tempVector = new Vector2(0,0);
+
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                if (brickMap[x,y] == clickedObject)
+                {
+                    tempVector.x = x;
+                    tempVector.y = y;
+                    Debug.Log(tempVector);
+                    return tempVector;
+                }
+            }
+        }
+        Debug.Log("getClickedObject() returned (0,0)");
+        return tempVector;
+    }
+
+    float getDistance(float x1, float y1, float x2, float y2)
+    {
+        return Mathf.Sqrt(Mathf.Pow((x2 - x1), 2) + Mathf.Pow((y2 - y1), 2));
+    }
+
+    void moveBlock(int targetDirection, GameObject[][] brick)
+    {
+        if (targetDirection == 0)
+        {
+            // up
+
+        }
+        if (targetDirection == 1)
+        {
+            // down
+        }
+        if (targetDirection == 2)
+        {
+            // left
+        }
+        if (targetDirection == 3)
+        {
+            // right
+        }
+    }
+
+    public void getClickedObject(GameObject clickedObject)
+    {
+        lastBrickClicked = clickedObject;
+    }
+
+    public void checkDirection()
+    {
+        worldMousePosition = Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
+
+        cursorDistance = getDistance(lastBrickClicked.transform.position.x, lastBrickClicked.transform.position.y, worldMousePosition.x, worldMousePosition.y);
+
+        if (cursorDistance > 0.5)
+        {
+            Direction = worldMousePosition - lastBrickClicked.transform.position;
+            Direction.z = 0;
+            Direction.Normalize();
+            Debug.Log(moveDirection(Direction));
+        }
+    }
+
+    // Gets the direction the mouse is pointing in in relation to the block.
+    public targetDirection moveDirection(Vector2 direction)
+    {
+        Vector2 absVec = new Vector2(Mathf.Abs(direction.x), Mathf.Abs(direction.y));
+        targetDirection[] PossibleOutputs;
+
+        float biggerComponent;
+
+        // Horizontal
+        if (absVec.x > absVec.y)
+        {
+            biggerComponent = direction.x;
+
+            PossibleOutputs = new targetDirection[2] { targetDirection.Left, targetDirection.Right };
+        }
+
+        // Vertical
+        else
+        {
+            biggerComponent = direction.y;
+
+            PossibleOutputs = new targetDirection[2] { targetDirection.Down, targetDirection.Up };
+        }
+
+        if (biggerComponent > 0)
+        {
+            return PossibleOutputs[1];
+        }
+        else
+        {
+            return PossibleOutputs[0];
+        }
     }
 }

@@ -7,24 +7,14 @@ public class BrickManager : MonoBehaviour
     [HideInInspector]
     public int brickType;
 
-    private float cursorDistance;
+    private GameManager gameManagerScript;
 
-    private Vector3 offsetPosition;
-    private Vector3 worldMousePosition;
-    private Vector3 Direction;
-
-    enum targetDirection
-    {
-        Up,
-        Down,
-        Left,
-        Right
-    }
+    public Vector3 offsetPosition;
 
     // Start is called before the first frame update
     void Start()
     {
-
+        gameManagerScript = GameObject.FindGameObjectWithTag("GameManager").GetComponent<GameManager>();
     }
 
     // Update is called once per frame
@@ -65,72 +55,20 @@ public class BrickManager : MonoBehaviour
         }
     }
 
+    public void deleteBrick()
+    {
+        Destroy(this.gameObject);
+    }
+
     void OnMouseDown()
     {
+        gameManagerScript.getClickedObject(this.gameObject);
         offsetPosition = gameObject.transform.position -
         Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
     }
 
     void OnMouseDrag()
     {
-        worldMousePosition = Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
-
-        cursorDistance = getDistance(this.transform.position.x, this.transform.position.y, worldMousePosition.x, worldMousePosition.y);
-
-        if (cursorDistance > 0.5)
-        {
-            Direction = worldMousePosition - this.transform.position;
-            Direction.z = 0;
-            Direction.Normalize();
-            Debug.Log(blockDirection(Direction));
-        }
-    }
-
-    float getDistance(float x1, float y1, float x2, float y2)
-    {
-        return Mathf.Sqrt(Mathf.Pow((x2 - x1), 2) + Mathf.Pow((y2 - y1), 2));
-    }
-
-    // outside of function do allocation once off.
-    // allocations are horizontal and vert if statmeents.
-    // possible outputs = horiztontal or vertical.
-
-    // Gets the direction the mouse is pointing in in relation to the block.
-    targetDirection blockDirection(Vector2 direction)
-    {
-        Vector2 absVec = new Vector2(Mathf.Abs(direction.x), Mathf.Abs(direction.y));
-        targetDirection[] PossibleOutputs;
-
-        float BiggerComponent;
-
-        // Horizontal
-        if (absVec.x > absVec.y)
-        {
-            BiggerComponent = direction.x;
-
-            PossibleOutputs = new targetDirection[2] { targetDirection.Left, targetDirection.Right };
-        }
-
-        // Vertical
-        else
-        {
-            BiggerComponent = direction.y;
-      
-            PossibleOutputs = new targetDirection[2] { targetDirection.Down, targetDirection.Up };
-        }
-
-        if (BiggerComponent > 0)
-        {
-            return PossibleOutputs[1];
-        }
-        else
-        {
-            return PossibleOutputs[0];
-        }
-    }
-
-    public void deleteBrick()
-    { 
-        Destroy(this.gameObject);
+        gameManagerScript.checkDirection();
     }
 }

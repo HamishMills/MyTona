@@ -94,6 +94,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   brickType: 0
+  GameManager: {fileID: 0}
+  offsetPosition: {x: 0, y: 0, z: 0}
 --- !u!61 &300391828789809910
 BoxCollider2D:
   m_ObjectHideFlags: 0
