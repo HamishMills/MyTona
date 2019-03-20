@@ -13,6 +13,7 @@ public class GameManager : MonoBehaviour
     // Position of the bottom left most tile.
     private float brickPositionX = -9.0f;
     private float brickPositionY = -4.0f;
+
     // Distance between cursor and selected brick.
     private float cursorDistance;
 
@@ -31,6 +32,8 @@ public class GameManager : MonoBehaviour
         Left,
         Right
     }
+
+    //targetDirection[] PossibleOutputs = new targetDirection[2];
 
     // Distance each tile needs to move. 
     // So we can * the increment number by column/row to get distance.
@@ -147,7 +150,6 @@ public class GameManager : MonoBehaviour
     public targetDirection moveDirection(Vector2 direction)
     {
         Vector2 absVec = new Vector2(Mathf.Abs(direction.x), Mathf.Abs(direction.y));
-        targetDirection[] PossibleOutputs;
 
         float biggerComponent;
 
