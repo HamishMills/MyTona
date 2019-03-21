@@ -10,6 +10,8 @@ public class GameManager : MonoBehaviour
 
     private GameObject lastBrickClicked;
 
+    private bool isDragging;
+
     // Position of the bottom left most tile.
     private float brickPositionX = -9.0f;
     private float brickPositionY = -4.0f;
@@ -54,12 +56,13 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(checkDirection());
-        if (checkDirection())
+        Debug.Log(checkDistance());
+        if (checkDistance())
         {
+            Debug.Log("yay");
             //moveBlock((int)moveDirection(Direction));
             //Debug.Log((int)moveDirection(Direction));
-            
+
         }
 
     }
@@ -116,7 +119,7 @@ public class GameManager : MonoBehaviour
     void moveBlock(int targetDirection)
     {
         Vector2 brickCoords = getClickedCoords(lastBrickClicked);
-        GameObject tempBrick;
+        GameObject tempBrick = lastBrickClicked;
 
         if (targetDirection == 0)
         {
@@ -130,10 +133,7 @@ public class GameManager : MonoBehaviour
                 tempBrick = brickMap[(int)brickCoords.x,(int)brickCoords.y + 1];
 
                 brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].gameObject.transform.position
-                    .Set(brickCoords.x,brickCoords.y,0);
-
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
-                   .Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
+                    .Set(brickCoords.x, brickCoords.y, 0);
             }
         }
         if (targetDirection == 1)
@@ -149,12 +149,9 @@ public class GameManager : MonoBehaviour
 
                 brickMap[(int)brickCoords.x, (int)brickCoords.y - 1].gameObject.transform.position
                     .Set(brickCoords.x, brickCoords.y, 0);
-
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
-                   .Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
             }
         }
-        if (targetDirection == 2)
+        else if (targetDirection == 2)
         {
             // left
             if (brickCoords.x <= 0)
@@ -167,12 +164,10 @@ public class GameManager : MonoBehaviour
 
                 brickMap[(int)brickCoords.x - 1, (int)brickCoords.y].gameObject.transform.position
                     .Set(brickCoords.x, brickCoords.y, 0);
-
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
-                   .Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
             }
         }
-        if (targetDirection == 3)
+        // targetDirection == 3
+        else 
         {
             // right
             if (brickCoords.x >= 7)
@@ -185,38 +180,50 @@ public class GameManager : MonoBehaviour
 
                 brickMap[(int)brickCoords.x + 1, (int)brickCoords.y].gameObject.transform.position
                     .Set(brickCoords.x, brickCoords.y, 0);
-
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
-                   .Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
             }
         }
+
+        brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
+           .Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
     }
 
-    public void getClickedObject(GameObject clickedObject)
+    public void setIsDragging(bool dragging)
+    {
+        isDragging = dragging;
+    }
+
+    public bool getIsDragging()
+    {
+        return isDragging;
+    }
+
+    public void setClickedObject(GameObject clickedObject)
     {
         lastBrickClicked = clickedObject;
     }
 
-    public bool checkDirection()
+    public bool checkDistance()
     {
-        if (lastBrickClicked == null)
+        if (lastBrickClicked != null && isDragging == true)
         {
-            return false;
+            worldMousePosition = Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
+
+            cursorDistance = getDistance(lastBrickClicked.transform.position.x, lastBrickClicked.transform.position.y, worldMousePosition.x, worldMousePosition.y);
+            // You have to time it perfectly, if you click on the center. lastBrickClicked is not null but the next frame it will be.
+            if (cursorDistance > 0.5)
+            {
+                Direction = worldMousePosition - lastBrickClicked.transform.position;
+                Direction.z = 0;
+                Direction.Normalize();
+                lastBrickClicked = null;
+                //Debug.Log(moveDirection(Direction));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
-
-        worldMousePosition = Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
-
-        cursorDistance = getDistance(lastBrickClicked.transform.position.x, lastBrickClicked.transform.position.y, worldMousePosition.x, worldMousePosition.y);
-        // You have to time it perfectly, if you click on the center. lastBrickClicked is not null but the next frame it will be.
-        if (cursorDistance > 0.5)
-        {
-            Direction = worldMousePosition - lastBrickClicked.transform.position;
-            Direction.z = 0;
-            Direction.Normalize();
-            lastBrickClicked = null;
-            return true;
-        }
-
         return false;
     }
 

@@ -28,6 +28,7 @@ public class BrickManager : MonoBehaviour
         return brickType;
     }
 
+
     public void SetBrickType(int newBrickType)
     {
         brickType = newBrickType;
@@ -62,13 +63,24 @@ public class BrickManager : MonoBehaviour
 
     void OnMouseDown()
     {
-        gameManagerScript.getClickedObject(this.gameObject);
+        gameManagerScript.setIsDragging(true);
+        gameManagerScript.setClickedObject(this.gameObject);
+
         offsetPosition = gameObject.transform.position -
         Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
     }
 
-    void OnMouseDrag()
+    void OnMouseUp()
     {
-        gameManagerScript.checkDirection();
+        gameManagerScript.setIsDragging(false);
     }
+
+    //void OnMouseDrag()
+    //{
+    //    if (!gameManagerScript.getIsDragging())
+    //    {
+    //        gameManagerScript.checkDistance();
+    //        Debug.Log("Test");
+    //    }
+    //}
 }
