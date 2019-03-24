@@ -51,6 +51,8 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         newBoard();
+        //Debug.Log(checkValidity(new Vector2(0, 0)));
+        checkValidity(new Vector2(0, 6));
     }
 
     // Update is called once per frame
@@ -59,10 +61,17 @@ public class GameManager : MonoBehaviour
         if (checkDistance())
         {
             moveBlock((int)moveDirection(Direction));
-            //Debug.Log((int)moveDirection(Direction));
-            //moveBlock((int)moveDirection(Direction));
-            //Debug.Log((int)moveDirection(Direction));
 
+            for (int y = 0; y < 8; y++)
+            {
+                for (int x = 0; x < 8; x++)
+                {
+                    
+                }
+            }
+            // check validity.
+            // if not return piece back.
+            // if yes then destroy block, add points and everything fall to the ground.
         }
     }
 
@@ -72,19 +81,15 @@ public class GameManager : MonoBehaviour
         {
             for (int x = 0; x < 8; ++x)
             {
-                //colourMap[x, y] = Random.Range(1, 6);
-
                 Position = new Vector3(brickPositionX + (xIncrement * x), brickPositionY + (yIncrement * y));
 
                 // Instantiate a brick at incrementing positions and set colour.
                 currentBrick = Instantiate(Brick, Position, Quaternion.identity);
-                currentBrick.GetComponent<BrickManager>().SetBrickType((Random.Range(1, 6)));
+                currentBrick.GetComponent<BrickManager>().setBrickType((Random.Range(1, 6)));
 
                 brickMap[x, y] = currentBrick;
-                // brickMap[x, y] = currentBrick.GetComponent<BrickManager>().GetBrickType();
             }
         }
-
         futureBrickMap = brickMap;
     }
 
@@ -119,22 +124,10 @@ public class GameManager : MonoBehaviour
     {
         Vector2 brickCoords = getClickedCoords(lastBrickClicked);
         Vector2 tempPosition = new Vector2(0,0);
+
         GameObject tempBrick;
+
         lastBrickClicked = null;
-
-        //Debug.Log(brickCoords);
-        //Debug.Log(lastBrickClicked);
-
-  //      tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y + 1];
-
-  //      brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].gameObject.transform.position = new Vector2
-  //      (brickCoords.x, brickCoords.y);
-
-  //      brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
-  //.Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
-
-
-        Debug.Log(brickCoords); 
 
         if (targetDirection == 0)
         {
@@ -143,7 +136,6 @@ public class GameManager : MonoBehaviour
             {
                 // do nothing
                 Debug.Log("up");
-
             }
             else
             {
@@ -182,7 +174,6 @@ public class GameManager : MonoBehaviour
             {
                 // do nothing
                 Debug.Log("left");
-
             }
             else
             {
@@ -203,7 +194,6 @@ public class GameManager : MonoBehaviour
             {
                 // do nothing
                 Debug.Log("right");
-
             }
             else
             {
@@ -234,7 +224,6 @@ public class GameManager : MonoBehaviour
 
     public void setClickedObject(GameObject clickedObject)
     {
-        //Debug.Log("1");
         lastBrickClicked = clickedObject;
     }
 
@@ -253,8 +242,6 @@ public class GameManager : MonoBehaviour
                 Direction = worldMousePosition - lastBrickClicked.transform.position;
                 Direction.z = 0;
                 Direction.Normalize();
-
-                //lastBrickClicked = null;
 
                 return true;
             }
@@ -299,4 +286,106 @@ public class GameManager : MonoBehaviour
             return PossibleOutputs[0];
         }
     }
+
+    // checks whether a single brick tile is currently in a row of 3 or more.
+    Vector2 checkValidity(Vector2 brickCoord)
+    {
+        int brickType = brickMap[(int)brickCoord.x, (int)brickCoord.y].GetComponent<BrickManager>().getBrickType();
+
+        int tempX = (int)brickCoord.x;
+        int tempY = (int)brickCoord.y;
+
+        // they start at -1 because the function counts itself twice. Once counting up, once counting down.
+        int xBricks = -1;
+        int yBricks = -1;
+
+        // Vertical
+        for (int y = (int)brickCoord.y; y < 8; y++)
+        {
+            if (brickMap[tempX, y].GetComponent<BrickManager>().getBrickType() == brickType)
+            {
+               // Debug.Log(yBricks);
+                yBricks = yBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int y = (int)brickCoord.y; y >= 0; y--)
+        {
+            if (brickMap[tempX, y].GetComponent<BrickManager>().getBrickType() == brickType)
+            {
+                yBricks = yBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // Horizontal
+        for (int x = (int)brickCoord.x; x < 8; x++)
+        {
+            if (brickMap[x, tempY].GetComponent<BrickManager>().getBrickType() == brickType)
+            {
+                xBricks = xBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int x = (int)brickCoord.x; x >= 0; x--)
+        {
+            if (brickMap[x, tempY].GetComponent<BrickManager>().getBrickType() == brickType)
+            {
+                xBricks = xBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return new Vector2(xBricks, yBricks);
+    }
 }
+
+
+
+
+
+
+
+// might have to do y+1
+//while (brickMap[currentX, currentY] != null)
+//{
+//    if (plusValues)
+//    {
+//        if (brickMap[currentX, currentY + 1] == null)
+//        {
+//            currentY = (int)brickCoord.y;
+//            plusValues = false;
+//        }
+//        else
+//        {
+//            currentY += 1;
+//        }
+//    }
+//    else
+//    {
+//        currentY -= 1;
+//        if (brickMap[currentX, currentY - 1] == null)
+//        {
+//            currentY = (int)brickCoord.y;
+//            plusValues = true;
+//        }
+//        else
+//        {
+//            currentY -= 1;
+
+//        }
+//    }
+//}

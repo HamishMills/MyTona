@@ -23,13 +23,13 @@ public class BrickManager : MonoBehaviour
 
     }
 
-    public int GetBrickType()
+    public int getBrickType()
     {
         return brickType;
     }
 
 
-    public void SetBrickType(int newBrickType)
+    public void setBrickType(int newBrickType)
     {
         brickType = newBrickType;
 
