@@ -56,15 +56,14 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(checkDistance());
         if (checkDistance())
         {
-            Debug.Log("yay");
+            moveBlock((int)moveDirection(Direction));
+            //Debug.Log((int)moveDirection(Direction));
             //moveBlock((int)moveDirection(Direction));
             //Debug.Log((int)moveDirection(Direction));
 
         }
-
     }
 
     void newBoard()
@@ -101,7 +100,7 @@ public class GameManager : MonoBehaviour
                 {
                     tempVector.x = x;
                     tempVector.y = y;
-                    Debug.Log(tempVector);
+                    //Debug.Log(tempVector);
                     return tempVector;
                 }
             }
@@ -115,11 +114,27 @@ public class GameManager : MonoBehaviour
         return Mathf.Sqrt(Mathf.Pow((x2 - x1), 2) + Mathf.Pow((y2 - y1), 2));
     }
 
-    // maybe tempBrick only needs to copy position not actual object.
+    // maybe tempBrick only needs to copy position not actual object. setting position not actaul position in the array
     void moveBlock(int targetDirection)
     {
         Vector2 brickCoords = getClickedCoords(lastBrickClicked);
-        GameObject tempBrick = lastBrickClicked;
+        Vector2 tempPosition = new Vector2(0,0);
+        GameObject tempBrick;
+        lastBrickClicked = null;
+
+        //Debug.Log(brickCoords);
+        //Debug.Log(lastBrickClicked);
+
+  //      tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y + 1];
+
+  //      brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].gameObject.transform.position = new Vector2
+  //      (brickCoords.x, brickCoords.y);
+
+  //      brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
+  //.Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
+
+
+        Debug.Log(brickCoords); 
 
         if (targetDirection == 0)
         {
@@ -127,13 +142,18 @@ public class GameManager : MonoBehaviour
             if (brickCoords.y >= 7)
             {
                 // do nothing
+                Debug.Log("up");
+
             }
             else
             {
-                tempBrick = brickMap[(int)brickCoords.x,(int)brickCoords.y + 1];
+                tempPosition = brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].transform.position;
+                brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
+                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
-                brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].gameObject.transform.position
-                    .Set(brickCoords.x, brickCoords.y, 0);
+                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
+                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x, (int)brickCoords.y + 1];
+                brickMap[(int)brickCoords.x, (int)brickCoords.y + 1] = tempBrick;
             }
         }
         if (targetDirection == 1)
@@ -142,13 +162,17 @@ public class GameManager : MonoBehaviour
             if (brickCoords.y <= 0)
             {
                 // do nothing
+                Debug.Log("down");
             }
             else
             {
-                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y - 1];
+                tempPosition = brickMap[(int)brickCoords.x, (int)brickCoords.y - 1].transform.position;
+                brickMap[(int)brickCoords.x, (int)brickCoords.y - 1].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
+                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
-                brickMap[(int)brickCoords.x, (int)brickCoords.y - 1].gameObject.transform.position
-                    .Set(brickCoords.x, brickCoords.y, 0);
+                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
+                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x, (int)brickCoords.y - 1];
+                brickMap[(int)brickCoords.x, (int)brickCoords.y - 1] = tempBrick;
             }
         }
         else if (targetDirection == 2)
@@ -157,34 +181,45 @@ public class GameManager : MonoBehaviour
             if (brickCoords.x <= 0)
             {
                 // do nothing
+                Debug.Log("left");
+
             }
             else
             {
-                tempBrick = brickMap[(int)brickCoords.x - 1, (int)brickCoords.y];
+                tempPosition = brickMap[(int)brickCoords.x - 1, (int)brickCoords.y].transform.position;
+                brickMap[(int)brickCoords.x - 1, (int)brickCoords.y].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
+                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
-                brickMap[(int)brickCoords.x - 1, (int)brickCoords.y].gameObject.transform.position
-                    .Set(brickCoords.x, brickCoords.y, 0);
+                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
+                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x - 1, (int)brickCoords.y];
+                brickMap[(int)brickCoords.x - 1, (int)brickCoords.y] = tempBrick;
             }
         }
         // targetDirection == 3
-        else 
+        else if (targetDirection == 3)
         {
             // right
             if (brickCoords.x >= 7)
             {
                 // do nothing
+                Debug.Log("right");
+
             }
             else
             {
-                tempBrick = brickMap[(int)brickCoords.x + 1, (int)brickCoords.y];
+                tempPosition = brickMap[(int)brickCoords.x + 1, (int)brickCoords.y].transform.position;
+                brickMap[(int)brickCoords.x + 1, (int)brickCoords.y].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
+                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
-                brickMap[(int)brickCoords.x + 1, (int)brickCoords.y].gameObject.transform.position
-                    .Set(brickCoords.x, brickCoords.y, 0);
+                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
+                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x + 1, (int)brickCoords.y];
+                brickMap[(int)brickCoords.x + 1, (int)brickCoords.y] = tempBrick;
             }
         }
-
-        brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position
-           .Set(tempBrick.transform.position.x, tempBrick.transform.position.y, 0);
+        else
+        {
+            // do nothing
+        }
     }
 
     public void setIsDragging(bool dragging)
@@ -199,24 +234,28 @@ public class GameManager : MonoBehaviour
 
     public void setClickedObject(GameObject clickedObject)
     {
+        //Debug.Log("1");
         lastBrickClicked = clickedObject;
     }
 
+    // Check the distance between the center of the clicked block and the mouse cursor is over 0.5 (half of the size of a brick)
     public bool checkDistance()
     {
+        //Debug.Log(lastBrickClicked);
         if (lastBrickClicked != null && isDragging == true)
         {
             worldMousePosition = Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
 
             cursorDistance = getDistance(lastBrickClicked.transform.position.x, lastBrickClicked.transform.position.y, worldMousePosition.x, worldMousePosition.y);
-            // You have to time it perfectly, if you click on the center. lastBrickClicked is not null but the next frame it will be.
+            
             if (cursorDistance > 0.5)
             {
                 Direction = worldMousePosition - lastBrickClicked.transform.position;
                 Direction.z = 0;
                 Direction.Normalize();
-                lastBrickClicked = null;
-                //Debug.Log(moveDirection(Direction));
+
+                //lastBrickClicked = null;
+
                 return true;
             }
             else
