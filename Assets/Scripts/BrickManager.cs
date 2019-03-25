@@ -74,13 +74,4 @@ public class BrickManager : MonoBehaviour
     {
         gameManagerScript.setIsDragging(false);
     }
-
-    //void OnMouseDrag()
-    //{
-    //    if (!gameManagerScript.getIsDragging())
-    //    {
-    //        gameManagerScript.checkDistance();
-    //        Debug.Log("Test");
-    //    }
-    //}
 }
