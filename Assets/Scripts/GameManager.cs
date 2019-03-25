@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
     // Gets two different positions of destroyable rows either going vertical or horizontal.
     private Vector2 deleteCoordsY = new Vector2(0, 0);
     private Vector2 deleteCoordsX = new Vector2(0, 0);
+    private Vector2 lastBrickCoords = new Vector2(0, 0);
 
     private GameObject[,] brickMap = new GameObject[8, 8];
     private GameObject[,] futureBrickMap = new GameObject[8, 8];
@@ -55,20 +56,52 @@ public class GameManager : MonoBehaviour
 
         // Changes the board so that there aren't any possible solves to begin with.
         fixNewBoard();
-        //Debug.Log(checkValidity(new Vector2(0, 0), true));
     }
 
     // Update is called once per frame
     void Update()
     {
+        // Constantly look for potential solves
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                if (brickMap[x,y] != null)
+                {
+                    destroySolvedBricks(checkValidity(new Vector2(x, y)));
+                }
+            }
+        }
+
         if (checkDistance())
         {
             moveBrick((int)moveDirection(Direction));
-
             // check validity.
             // if not return piece back.
             // if yes then destroy brick, add points and everything fall to the ground.
         }
+        
+    }
+
+    public void setIsDragging(bool dragging)
+    {
+        isDragging = dragging;
+    }
+
+    public bool getIsDragging()
+    {
+        return isDragging;
+    }
+
+    public void setClickedObject(GameObject clickedObject)
+    {
+        lastBrickClicked = clickedObject;
+    }
+
+    // Simple math formula for getting distance, could also use vectors.
+    float getDistance(float x1, float y1, float x2, float y2)
+    {
+        return Mathf.Sqrt(Mathf.Pow((x2 - x1), 2) + Mathf.Pow((y2 - y1), 2));
     }
 
     void newBoard()
@@ -81,7 +114,9 @@ public class GameManager : MonoBehaviour
 
                 // Instantiate a brick at incrementing positions and set colour.
                 currentBrick = Instantiate(Brick, Position, Quaternion.identity);
-                currentBrick.GetComponent<BrickManager>().setBrickType((Random.Range(1, 6)));
+
+                currentBrick.GetComponent<BrickManager>().setBrickType(Random.Range(1, 6));
+                //currentBrick.GetComponent<BrickManager>().setBrickType(1);
 
                 brickMap[x, y] = currentBrick;
             }
@@ -97,13 +132,13 @@ public class GameManager : MonoBehaviour
             for (int x = 0; x < 8; x++)
             {
                 // check if every object has more than 3 blocks of the same colour in a row.
-                if (checkValidity(new Vector2(x, y), true).x >= 3 || checkValidity(new Vector2(x, y), true).y >= 3)
+                if (checkValidity(new Vector2(x, y)).x >= 3 || checkValidity(new Vector2(x, y)).y >= 3)
                 {
                     // if yes then keep setting the brickMap[x,y] to a different colour until brickMap[x,y] is less than 3.
                     for (int i = 1; i <= 5; i++)
                     {
                         brickMap[x, y].GetComponent<BrickManager>().setBrickType(i);
-                        if (checkValidity(new Vector2(x, y), true).x >= 3 || checkValidity(new Vector2(x, y), true).y >= 3)
+                        if (checkValidity(new Vector2(x, y)).x >= 3 || checkValidity(new Vector2(x, y)).y >= 3)
                         {
                             // do nothing. It is the same coloured brick as it was before.
                         }
@@ -141,17 +176,11 @@ public class GameManager : MonoBehaviour
         return tempVector;
     }
 
-    // Simple math formula for getting distance, could also use vectors.
-    float getDistance(float x1, float y1, float x2, float y2)
-    {
-        return Mathf.Sqrt(Mathf.Pow((x2 - x1), 2) + Mathf.Pow((y2 - y1), 2));
-    }
-
     // Gets the direction the mouse is in relation to the last clicked block. 
     // Then if legal, moves the block in that direction and swaps it with the block in the other direction.
     void moveBrick(int targetDirection)
     {
-        Vector2 brickCoords = getClickedCoords(lastBrickClicked);
+        lastBrickCoords = getClickedCoords(lastBrickClicked);
         Vector2 tempPosition = new Vector2(0,0);
 
         GameObject tempBrick;
@@ -161,7 +190,7 @@ public class GameManager : MonoBehaviour
         // 0 == up
         if (targetDirection == 0)
         {
-            if (brickCoords.y >= 7)
+            if (lastBrickCoords.y >= 7)
             {
                 // do nothing
             }
@@ -169,20 +198,20 @@ public class GameManager : MonoBehaviour
             {
                 // Swap the two physical positions of each brick.
                 // Later on should do this over time and not teleport.
-                tempPosition = brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].transform.position;
-                brickMap[(int)brickCoords.x, (int)brickCoords.y + 1].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
+                tempPosition = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y + 1].transform.position;
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y + 1].gameObject.transform.position = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].transform.position;
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
                 // Swap the two positions within the brickMap[,] array.
-                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
-                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x, (int)brickCoords.y + 1];
-                brickMap[(int)brickCoords.x, (int)brickCoords.y + 1] = tempBrick;
+                tempBrick = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y];
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y] = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y + 1];
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y + 1] = tempBrick;
             }
         }
         // 1 == down
         if (targetDirection == 1)
         {
-            if (brickCoords.y <= 0)
+            if (lastBrickCoords.y <= 0)
             {
                 // do nothing
             }
@@ -190,20 +219,20 @@ public class GameManager : MonoBehaviour
             {
                 // Swap the two physical positions of each brick.
                 // Later on should do this over time and not teleport.
-                tempPosition = brickMap[(int)brickCoords.x, (int)brickCoords.y - 1].transform.position;
-                brickMap[(int)brickCoords.x, (int)brickCoords.y - 1].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
+                tempPosition = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1].transform.position;
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1].gameObject.transform.position = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].transform.position;
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
                 // Swap the two positions within the brickMap[,] array.
-                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
-                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x, (int)brickCoords.y - 1];
-                brickMap[(int)brickCoords.x, (int)brickCoords.y - 1] = tempBrick;
+                tempBrick = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y];
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y] = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1];
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1] = tempBrick;
             }
         }
         // 2 == left
         else if (targetDirection == 2)
         {
-            if (brickCoords.x <= 0)
+            if (lastBrickCoords.x <= 0)
             {
                 // do nothing
             }
@@ -211,20 +240,20 @@ public class GameManager : MonoBehaviour
             {
                 // Swap the two physical positions of each brick.
                 // Later on should do this over time and not teleport.
-                tempPosition = brickMap[(int)brickCoords.x - 1, (int)brickCoords.y].transform.position;
-                brickMap[(int)brickCoords.x - 1, (int)brickCoords.y].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
+                tempPosition = brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y].transform.position;
+                brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y].gameObject.transform.position = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].transform.position;
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
                 // Swap the two positions within the brickMap[,] array.
-                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
-                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x - 1, (int)brickCoords.y];
-                brickMap[(int)brickCoords.x - 1, (int)brickCoords.y] = tempBrick;
+                tempBrick = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y];
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y] = brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y];
+                brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y] = tempBrick;
             }
         }
         // 3 == right
         else if (targetDirection == 3)
         {
-            if (brickCoords.x >= 7)
+            if (lastBrickCoords.x >= 7)
             {
                 // do nothing
             }
@@ -232,35 +261,20 @@ public class GameManager : MonoBehaviour
             {
                 // Swap the two physical positions of each brick.
                 // Later on should do this over time and not teleport.
-                tempPosition = brickMap[(int)brickCoords.x + 1, (int)brickCoords.y].transform.position;
-                brickMap[(int)brickCoords.x + 1, (int)brickCoords.y].gameObject.transform.position = brickMap[(int)brickCoords.x, (int)brickCoords.y].transform.position;
-                brickMap[(int)brickCoords.x, (int)brickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
+                tempPosition = brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y].transform.position;
+                brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y].gameObject.transform.position = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].transform.position;
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y].gameObject.transform.position = new Vector2(tempPosition.x, tempPosition.y);
 
                 // Swap the two positions within the brickMap[,] array.
-                tempBrick = brickMap[(int)brickCoords.x, (int)brickCoords.y];
-                brickMap[(int)brickCoords.x, (int)brickCoords.y] = brickMap[(int)brickCoords.x + 1, (int)brickCoords.y];
-                brickMap[(int)brickCoords.x + 1, (int)brickCoords.y] = tempBrick;
+                tempBrick = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y];
+                brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y] = brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y];
+                brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y] = tempBrick;
             }
         }
         else
         {
             // do nothing
         }
-    }
-
-    public void setIsDragging(bool dragging)
-    {
-        isDragging = dragging;
-    }
-
-    public bool getIsDragging()
-    {
-        return isDragging;
-    }
-
-    public void setClickedObject(GameObject clickedObject)
-    {
-        lastBrickClicked = clickedObject;
     }
 
     // Check the distance between the center of the clicked brick and the mouse cursor is over 0.5 (half of the size of a brick)
@@ -324,7 +338,7 @@ public class GameManager : MonoBehaviour
     }
 
     // checks whether a single brick tile is currently in a row of 3 or more.
-    Vector2 checkValidity(Vector2 brickCoord, bool returnValue)
+    Vector2 checkValidity(Vector2 brickCoord)
     {
         int brickType = brickMap[(int)brickCoord.x, (int)brickCoord.y].GetComponent<BrickManager>().getBrickType();
 
@@ -336,11 +350,9 @@ public class GameManager : MonoBehaviour
         int yBricks = -1;
 
         // Vertical
-        
-
         for (int y = (int)brickCoord.y; y >= 0; y--)
         {
-            if (brickMap[tempX, y].GetComponent<BrickManager>().getBrickType() == brickType)
+            if (brickMap[tempX, y] != null && brickMap[tempX, y].GetComponent<BrickManager>().getBrickType() == brickType)
             {
                 yBricks = yBricks + 1;
 
@@ -356,12 +368,12 @@ public class GameManager : MonoBehaviour
 
         for (int y = (int)brickCoord.y; y < 8; y++)
         {
-            if (brickMap[tempX, y].GetComponent<BrickManager>().getBrickType() == brickType)
+            if (brickMap[tempX, y] != null && brickMap[tempX, y].GetComponent<BrickManager>().getBrickType() == brickType)
             {
                 yBricks = yBricks + 1;
 
                 // We want the highest y value of a vertical row so that we can easily find the right blocks
-                //for (brickY) number of objects down from the highest Y value, delete/fall/replace.
+                // For (brickY) number of objects down from the highest Y value, delete/fall/replace.
                 deleteCoordsY = new Vector2(tempX, y);
             }
             else
@@ -371,37 +383,109 @@ public class GameManager : MonoBehaviour
         }
 
         // Horizontal
-        for (int x = (int)brickCoord.x; x < 8; x++)
-        {
-            if (brickMap[x, tempY].GetComponent<BrickManager>().getBrickType() == brickType)
-            {
-                xBricks = xBricks + 1;
-            }
-            else
-            {
-                break;
-            }
-        }
 
         for (int x = (int)brickCoord.x; x >= 0; x--)
         {
-            if (brickMap[x, tempY].GetComponent<BrickManager>().getBrickType() == brickType)
+            if (brickMap[x, tempY] != null && brickMap[x, tempY].GetComponent<BrickManager>().getBrickType() == brickType)
             {
                 xBricks = xBricks + 1;
+
+                // Set the X coords to be the block position itself.
+                // If the highest X position is higher than the block position, it'll change in the next for loop.
+                deleteCoordsX = new Vector2(tempX, tempY);
             }
             else
             {
                 break;
             }
         }
-        return new Vector2(xBricks, yBricks);
-        //if (returnValue == true)
-        //{
-        //    
-        //}
-        //else if (returnValue == false)
-        //{
+        for (int x = (int)brickCoord.x; x < 8; x++)
+        {
+            if (brickMap[x, tempY] != null && brickMap[x, tempY].GetComponent<BrickManager>().getBrickType() == brickType)
+            {
+                xBricks = xBricks + 1;
 
-        //}
+                // We want the highest x value of a vertical row so that we can easily find the right blocks
+                // For (brickY) number of objects down from the highest X value, delete/fall/replace.
+                deleteCoordsX = new Vector2(x, tempY);
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return new Vector2(xBricks, yBricks);
+    }
+
+    void destroySolvedBricks(Vector2 brickCount)
+    {
+        Vector2 currentValidityNumber;
+        Vector2 newValidityNumber = new Vector2(0, 0);
+
+        if (brickCount.x >= 3 || brickCount.y >= 3)
+        {
+            if (brickCount.x > brickCount.y)
+            {
+                currentValidityNumber = checkValidity(new Vector2(deleteCoordsX.x, deleteCoordsX.y));
+
+                for (int i = (int)deleteCoordsX.x; i > (int)deleteCoordsX.x - brickCount.x; i--)
+                {
+                    if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(i, deleteCoordsX.y)).x + (int)checkValidity(new Vector2(i, deleteCoordsX.y)).y)
+                    {
+                        // do nothing. biggest value is most valuable.
+                    }
+                    else
+                    {
+                        newValidityNumber = new Vector2(i, deleteCoordsX.y);
+                        currentValidityNumber = checkValidity(new Vector2(i, deleteCoordsX.y));
+                    }
+                }
+
+               // brickCount = checkValidity(newValidityNumber);
+            }
+            else if (brickCount.y > brickCount.x)
+            {
+                currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, deleteCoordsY.y));
+
+                for (int i = (int)deleteCoordsY.y; i > (int)deleteCoordsY.y - brickCount.y; i--)
+                {
+                    if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(deleteCoordsY.x, i)).x + (int)checkValidity(new Vector2(deleteCoordsY.x, i)).y)
+                    {
+                        // do nothing. biggest value is most valuable.
+                    }
+                    else
+                    {
+                        newValidityNumber = new Vector2(deleteCoordsY.x, i);
+                        currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, i));
+                    }
+                }
+            }
+            else 
+            {
+                // both are the same so the brick must be the best position
+            }
+        }
+            // double check that it is a possible move.
+        if (brickCount.y >= 3)
+        {
+            for (int i = (int)deleteCoordsY.y; i > ((int)deleteCoordsY.y - brickCount.y); i--)
+            {
+                brickMap[(int)deleteCoordsY.x, i].GetComponent<BrickManager>().deleteBrick();
+                brickMap[(int)deleteCoordsY.x, i] = null;
+            }
+        }
+                
+        if (brickCount.x >= 3)
+        {
+            for (int i = (int)deleteCoordsX.x; i > ((int)deleteCoordsX.x - brickCount.x); i--)
+            {
+                if (brickMap[i, (int)deleteCoordsX.y] != null)
+                {
+                    brickMap[i, (int)deleteCoordsX.y].GetComponent<BrickManager>().deleteBrick();
+                    brickMap[i, (int)deleteCoordsX.y] = null;
+                }
+            }
+        }
     }
 }
