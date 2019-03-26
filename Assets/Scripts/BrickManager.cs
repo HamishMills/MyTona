@@ -64,8 +64,11 @@ public class BrickManager : MonoBehaviour
     void OnMouseDown()
     {
         gameManagerScript.setIsDragging(true);
-        gameManagerScript.setClickedObject(this.gameObject);
-      
+        if (gameManagerScript.finishReverse)
+        {
+            gameManagerScript.setClickedObject(this.gameObject);
+        }
+
         offsetPosition = gameObject.transform.position -
         Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
     }
