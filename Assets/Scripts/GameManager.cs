@@ -25,6 +25,10 @@ public class GameManager : MonoBehaviour
     // Gets two different positions of destroyable rows either going vertical or horizontal.
     private Vector2 deleteCoordsY = new Vector2(0, 0);
     private Vector2 deleteCoordsX = new Vector2(0, 0);
+
+    private Vector2 tempDeleteCoordsY = new Vector2(0, 0);
+    private Vector2 tempDeleteCoordsX = new Vector2(0, 0);
+
     private Vector2 lastBrickCoords = new Vector2(0, 0);
 
     private GameObject[,] brickMap = new GameObject[8, 8];
@@ -61,26 +65,19 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // Constantly look for potential solves
-        for (int y = 0; y < 8; y++)
-        {
-            for (int x = 0; x < 8; x++)
-            {
-                if (brickMap[x,y] != null)
-                {
-                    destroySolvedBricks(checkValidity(new Vector2(x, y)));
-                }
-            }
-        }
+        // Constantly look for potential solves and destroy them.
+        setDestroy();
+
+        // Bricks fall down to the lowest untaken position (gravity)
+        setFall();
+
+        // Fill the null positions with bricks.
+        setRefill();
 
         if (checkDistance())
         {
             moveBrick((int)moveDirection(Direction));
-            // check validity.
-            // if not return piece back.
-            // if yes then destroy brick, add points and everything fall to the ground.
         }
-        
     }
 
     public void setIsDragging(bool dragging)
@@ -114,9 +111,7 @@ public class GameManager : MonoBehaviour
 
                 // Instantiate a brick at incrementing positions and set colour.
                 currentBrick = Instantiate(Brick, Position, Quaternion.identity);
-
                 currentBrick.GetComponent<BrickManager>().setBrickType(Random.Range(1, 6));
-                //currentBrick.GetComponent<BrickManager>().setBrickType(1);
 
                 brickMap[x, y] = currentBrick;
             }
@@ -131,7 +126,7 @@ public class GameManager : MonoBehaviour
         {
             for (int x = 0; x < 8; x++)
             {
-                // check if every object has more than 3 blocks of the same colour in a row.
+                // check if every object has more than 3 bricks of the same colour in a row.
                 if (checkValidity(new Vector2(x, y)).x >= 3 || checkValidity(new Vector2(x, y)).y >= 3)
                 {
                     // if yes then keep setting the brickMap[x,y] to a different colour until brickMap[x,y] is less than 3.
@@ -144,7 +139,7 @@ public class GameManager : MonoBehaviour
                         }
                         else
                         {
-                            // exit from the colour for loop and go onto the next block.
+                            // exit from the colour for loop and go onto the next brick.
                             break;
                         }
                     }
@@ -176,8 +171,8 @@ public class GameManager : MonoBehaviour
         return tempVector;
     }
 
-    // Gets the direction the mouse is in relation to the last clicked block. 
-    // Then if legal, moves the block in that direction and swaps it with the block in the other direction.
+    // Gets the direction the mouse is in relation to the last clicked brick. 
+    // Then if legal, moves the brick in that direction and swaps it with the brick in the other direction.
     void moveBrick(int targetDirection)
     {
         lastBrickCoords = getClickedCoords(lastBrickClicked);
@@ -356,9 +351,9 @@ public class GameManager : MonoBehaviour
             {
                 yBricks = yBricks + 1;
 
-                // Set the Y coords to be the block position itself.
-                // If the highest Y position is higher than the block position, it'll change in the next for loop.
-                deleteCoordsY = new Vector2(tempX, tempY);
+                // Set the Y coords to be the brick position itself.
+                // If the highest Y position is higher than the brick position, it'll change in the next for loop.
+                tempDeleteCoordsY = new Vector2(tempX, tempY);
             }
             else
             {
@@ -372,9 +367,9 @@ public class GameManager : MonoBehaviour
             {
                 yBricks = yBricks + 1;
 
-                // We want the highest y value of a vertical row so that we can easily find the right blocks
+                // We want the highest y value of a vertical row so that we can easily find the right bricks
                 // For (brickY) number of objects down from the highest Y value, delete/fall/replace.
-                deleteCoordsY = new Vector2(tempX, y);
+                tempDeleteCoordsY = new Vector2(tempX, y);
             }
             else
             {
@@ -390,9 +385,9 @@ public class GameManager : MonoBehaviour
             {
                 xBricks = xBricks + 1;
 
-                // Set the X coords to be the block position itself.
-                // If the highest X position is higher than the block position, it'll change in the next for loop.
-                deleteCoordsX = new Vector2(tempX, tempY);
+                // Set the X coords to be the brick position itself.
+                // If the highest X position is higher than the brick position, it'll change in the next for loop.
+                tempDeleteCoordsX = new Vector2(tempX, tempY);
             }
             else
             {
@@ -405,9 +400,9 @@ public class GameManager : MonoBehaviour
             {
                 xBricks = xBricks + 1;
 
-                // We want the highest x value of a vertical row so that we can easily find the right blocks
+                // We want the highest x value of a vertical row so that we can easily find the right bricks
                 // For (brickY) number of objects down from the highest X value, delete/fall/replace.
-                deleteCoordsX = new Vector2(x, tempY);
+                tempDeleteCoordsX = new Vector2(x, tempY);
             }
             else
             {
@@ -418,6 +413,7 @@ public class GameManager : MonoBehaviour
         return new Vector2(xBricks, yBricks);
     }
 
+    // maybe have 2 delete coords. one that gets set in check validity and one that you set after you find the final solution brick.
     void destroySolvedBricks(Vector2 brickCount)
     {
         Vector2 currentValidityNumber;
@@ -427,46 +423,57 @@ public class GameManager : MonoBehaviour
         {
             if (brickCount.x > brickCount.y)
             {
-                currentValidityNumber = checkValidity(new Vector2(deleteCoordsX.x, deleteCoordsX.y));
+                currentValidityNumber = checkValidity(new Vector2(tempDeleteCoordsX.x, tempDeleteCoordsX.y));
 
-                for (int i = (int)deleteCoordsX.x; i > (int)deleteCoordsX.x - brickCount.x; i--)
+                for (int i = (int)tempDeleteCoordsX.x; i > (int)tempDeleteCoordsX.x - brickCount.x; i--)
                 {
-                    if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(i, deleteCoordsX.y)).x + (int)checkValidity(new Vector2(i, deleteCoordsX.y)).y)
+                    if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(i, tempDeleteCoordsX.y)).x + (int)checkValidity(new Vector2(i, tempDeleteCoordsX.y)).y)
                     {
                         // do nothing. biggest value is most valuable.
+                        deleteCoordsX = tempDeleteCoordsX;
+                        deleteCoordsY = tempDeleteCoordsY;
                     }
                     else
                     {
-                        newValidityNumber = new Vector2(i, deleteCoordsX.y);
-                        currentValidityNumber = checkValidity(new Vector2(i, deleteCoordsX.y));
+                        newValidityNumber = new Vector2(i, tempDeleteCoordsX.y);
+                        currentValidityNumber = checkValidity(new Vector2(i, tempDeleteCoordsX.y));
+                        //Debug.Log(newValidityNumber);
                     }
                 }
-
-               // brickCount = checkValidity(newValidityNumber);
+                //Debug.Log(deleteCoordsX);
+                //Debug.Log(deleteCoordsY);
+                // brickCount = checkValidity(newValidityNumber);
             }
             else if (brickCount.y > brickCount.x)
             {
-                currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, deleteCoordsY.y));
+                currentValidityNumber = checkValidity(new Vector2(tempDeleteCoordsY.x, tempDeleteCoordsY.y));
 
-                for (int i = (int)deleteCoordsY.y; i > (int)deleteCoordsY.y - brickCount.y; i--)
+                for (int i = (int)tempDeleteCoordsY.y; i > (int)tempDeleteCoordsY.y - brickCount.y; i--)
                 {
-                    if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(deleteCoordsY.x, i)).x + (int)checkValidity(new Vector2(deleteCoordsY.x, i)).y)
+                    if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(tempDeleteCoordsY.x, i)).x + (int)checkValidity(new Vector2(tempDeleteCoordsY.x, i)).y)
                     {
                         // do nothing. biggest value is most valuable.
+                        deleteCoordsX = tempDeleteCoordsX;
+                        deleteCoordsY = tempDeleteCoordsY;
                     }
                     else
                     {
-                        newValidityNumber = new Vector2(deleteCoordsY.x, i);
-                        currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, i));
+                        newValidityNumber = new Vector2(tempDeleteCoordsY.x, i);
+                        currentValidityNumber = checkValidity(new Vector2(tempDeleteCoordsY.x, i));
                     }
                 }
+                //Debug.Log(deleteCoordsX);
+                //Debug.Log(deleteCoordsY);
             }
             else 
             {
-                // both are the same so the brick must be the best position
+                deleteCoordsX = tempDeleteCoordsX;
+                deleteCoordsY = tempDeleteCoordsY;
+                // this is the correct position.
             }
         }
-            // double check that it is a possible move.
+   
+        // double check that it is a possible move.
         if (brickCount.y >= 3)
         {
             for (int i = (int)deleteCoordsY.y; i > ((int)deleteCoordsY.y - brickCount.y); i--)
@@ -488,4 +495,152 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+
+    void setDestroy()
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                if (brickMap[x, y] != null)
+                {
+                    destroySolvedBricks(checkValidity(new Vector2(x, y)));
+                }
+            }
+        }
+    }
+
+    void setFall()
+    {
+        Vector2 tempPosition = new Vector2(0, 0);
+        // go through each position in the brickMap[,]
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                // if the current brick being looked at is null.
+                if (brickMap[x,y] == null)
+                {
+                    // keep going up until you find a brick.
+                    for (int j = y; j < 8; j++)
+                    {
+                        if (brickMap[x,j] != null)
+                        {
+                            // Move the brick then set the old x,y to be null.
+                            brickMap[x, j].transform.position = new Vector2(brickMap[x,j].transform.position.x, brickPositionY + (y * yIncrement));
+                            brickMap[x, y] = brickMap[x, j];
+                            brickMap[x, j] = null;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    void setRefill()
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                if (brickMap[x,y] == null)
+                {
+                    Position = new Vector3(brickPositionX + (xIncrement * x), brickPositionY + (yIncrement * y));
+                    currentBrick = Instantiate(Brick, Position, Quaternion.identity);
+                    currentBrick.GetComponent<BrickManager>().setBrickType(Random.Range(1, 6));
+
+                    brickMap[x, y] = currentBrick;
+                }
+            }
+        }
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+//void destroySolvedBricks(Vector2 brickCount)
+//{
+//    Vector2 currentValidityNumber;
+//    Vector2 newValidityNumber = new Vector2(0, 0);
+
+//    if (brickCount.x >= 3 || brickCount.y >= 3)
+//    {
+//        if (brickCount.x > brickCount.y)
+//        {
+//            currentValidityNumber = checkValidity(new Vector2(deleteCoordsX.x, deleteCoordsX.y));
+
+//            for (int i = (int)deleteCoordsX.x; i > (int)deleteCoordsX.x - brickCount.x; i--)
+//            {
+//                if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(i, deleteCoordsX.y)).x + (int)checkValidity(new Vector2(i, deleteCoordsX.y)).y)
+//                {
+//                    // do nothing. biggest value is most valuable.
+//                }
+//                else
+//                {
+//                    newValidityNumber = new Vector2(i, deleteCoordsX.y);
+//                    currentValidityNumber = checkValidity(new Vector2(i, deleteCoordsX.y));
+//                    Debug.Log(newValidityNumber);
+//                }
+//            }
+//            //Debug.Log(deleteCoordsX);
+//            //Debug.Log(deleteCoordsY);
+//            // brickCount = checkValidity(newValidityNumber);
+//        }
+//        else if (brickCount.y > brickCount.x)
+//        {
+//            currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, deleteCoordsY.y));
+
+//            for (int i = (int)deleteCoordsY.y; i > (int)deleteCoordsY.y - brickCount.y; i--)
+//            {
+//                if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(deleteCoordsY.x, i)).x + (int)checkValidity(new Vector2(deleteCoordsY.x, i)).y)
+//                {
+//                    // do nothing. biggest value is most valuable.
+
+//                }
+//                else
+//                {
+//                    newValidityNumber = new Vector2(deleteCoordsY.x, i);
+//                    currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, i));
+//                }
+//            }
+//            //Debug.Log(deleteCoordsX);
+//            //Debug.Log(deleteCoordsY);
+//        }
+//        else
+//        {
+//            // this is the correct position.
+//        }
+//    }
+
+//    // double check that it is a possible move.
+//    if (brickCount.y >= 3)
+//    {
+//        for (int i = (int)deleteCoordsY.y; i > ((int)deleteCoordsY.y - brickCount.y); i--)
+//        {
+//            brickMap[(int)deleteCoordsY.x, i].GetComponent<BrickManager>().deleteBrick();
+//            brickMap[(int)deleteCoordsY.x, i] = null;
+//        }
+//    }
+
+//    if (brickCount.x >= 3)
+//    {
+//        for (int i = (int)deleteCoordsX.x; i > ((int)deleteCoordsX.x - brickCount.x); i--)
+//        {
+//            if (brickMap[i, (int)deleteCoordsX.y] != null)
+//            {
+//                brickMap[i, (int)deleteCoordsX.y].GetComponent<BrickManager>().deleteBrick();
+//                brickMap[i, (int)deleteCoordsX.y] = null;
+//            }
+//        }
+//    }
+//}
