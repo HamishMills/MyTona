@@ -10,6 +10,7 @@ TagManager:
   - coords
   - xcoords
   - level
+  - Background
   layers:
   - Default
   - TransparentFX

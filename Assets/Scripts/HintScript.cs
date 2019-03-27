@@ -8,6 +8,8 @@ public class HintScript : MonoBehaviour
     private CoordinateTextScript coordsX;
     private CoordinateTextScript coordsY;
 
+    public GameObject background;
+
     public int buttonType;
     // Start is called before the first frame update
     void Start()
@@ -41,10 +43,12 @@ public class HintScript : MonoBehaviour
             if (Time.timeScale == 1)
             {
                 Time.timeScale = 0;
+                background.GetComponent<SpriteRenderer>().enabled = false;
             }
             else
             {
                 Time.timeScale = 1;
+                background.GetComponent<SpriteRenderer>().enabled = true;
             }
         }
         if (buttonType == 4)
