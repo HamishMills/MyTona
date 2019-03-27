@@ -64,7 +64,7 @@ public class BrickManager : MonoBehaviour
     void OnMouseDown()
     {
         gameManagerScript.setIsDragging(true);
-        if (gameManagerScript.finishReverse)
+        if (gameManagerScript.finishReverse && Time.timeScale == 1)
         {
             gameManagerScript.setClickedObject(this.gameObject);
         }

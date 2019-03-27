@@ -5,6 +5,11 @@ TagManager:
   serializedVersion: 2
   tags:
   - GameManager
+  - ScoreManager
+  - TimeRemaining
+  - coords
+  - xcoords
+  - level
   layers:
   - Default
   - TransparentFX

@@ -49,6 +49,9 @@ public class GameManager : MonoBehaviour
     private GameObject[,] brickMap = new GameObject[8, 8];
     private GameObject[,] futureBrickMap = new GameObject[8, 8];
 
+    private CoordinateTextScript coordsX;
+    private CoordinateTextScript coordsY;
+    
     private int[,] colourMap = new int[8, 8];
 
     public enum targetDirection
@@ -59,8 +62,15 @@ public class GameManager : MonoBehaviour
         Right
     }
 
+    private ScoreManager scoreManagerScript;
+
     void Start()
     {
+        coordsY = GameObject.FindGameObjectWithTag("coords").GetComponent<CoordinateTextScript>();
+        coordsX = GameObject.FindGameObjectWithTag("xcoords").GetComponent<CoordinateTextScript>();
+
+        scoreManagerScript = GameObject.FindGameObjectWithTag("ScoreManager").GetComponent<ScoreManager>();
+
         // Creates a board of random colours.
         newBoard();
 
@@ -116,7 +126,8 @@ public class GameManager : MonoBehaviour
         if (timeSinceLastMove < 0)
         {
             timeSinceLastMove = 30.0f;
-            Debug.Log(checkPossibleMove());
+            coordsX.setCoordinates();
+            coordsY.setCoordinates();
         }
         else
         {
@@ -156,7 +167,6 @@ public class GameManager : MonoBehaviour
                 // Instantiate a brick at incrementing positions and set colour.
                 currentBrick = Instantiate(Brick, Position, Quaternion.identity);
                 currentBrick.GetComponent<BrickManager>().setBrickType(Random.Range(1, 6));
-                //currentBrick.GetComponent<BrickManager>().setBrickType(1);
 
                 brickMap[x, y] = currentBrick;
             }
@@ -170,8 +180,16 @@ public class GameManager : MonoBehaviour
         {
             for (int x = 0; x < 8; x++)
             {
-                brickMap[x, y].GetComponent<BrickManager>().deleteBrick();
-                brickMap[x, y] = null;
+                if (brickMap[x,y] == null)
+                {
+
+                }
+                else
+                {
+                    brickMap[x, y].GetComponent<BrickManager>().deleteBrick();
+                    brickMap[x, y] = null;
+                }
+               
             }
         }
         newBoard();
@@ -342,7 +360,6 @@ public class GameManager : MonoBehaviour
             // do nothing
         }
     }
-
     // Reverse the last move made if the brick is not in a solved state.
     void reverseMove(int targetDirection)
     {
@@ -388,9 +405,6 @@ public class GameManager : MonoBehaviour
                 brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y] = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1];
                 brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1] = tempBrick;
             }
-                
-            //reverseDirection = 0;
-            //lastBrickClicked = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1];
         }
         // 2 == left
         else if (targetDirection == 2)
@@ -411,9 +425,6 @@ public class GameManager : MonoBehaviour
                 brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y] = brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y];
                 brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y] = tempBrick;
             }
-                
-            //reverseDirection = 3;
-            //lastBrickClicked = brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y];
         }
         // 3 == right
         else if (targetDirection == 3)
@@ -433,20 +444,12 @@ public class GameManager : MonoBehaviour
                 brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y] = brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y];
                 brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y] = tempBrick;
             }
-            //reverseDirection = 2;
-            //lastBrickClicked = brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y];
-
-            // Swap the two physical positions of each brick.
-            // Later on should do this over time and not teleport.
-            
         }
-        //moveBrick(reverseDirection);
     }
 
     // Check the distance between the center of the clicked brick and the mouse cursor is over 0.5 (half of the size of a brick)
     public bool checkDistance()
     {
-        //Debug.Log(lastBrickClicked);
         if (lastBrickClicked != null && isDragging == true)
         {
             worldMousePosition = Camera.main.ScreenToWorldPoint(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
@@ -706,6 +709,7 @@ public class GameManager : MonoBehaviour
         {
             for (int i = (int)deleteCoordsY.y; i > ((int)deleteCoordsY.y - brickCount.y); i--)
             {
+                scoreManagerScript.setBricksDestroyed();
                 timeSinceLastMove = 30.0f;
                 brickMap[(int)deleteCoordsY.x, i].GetComponent<BrickManager>().deleteBrick();
                 brickMap[(int)deleteCoordsY.x, i] = null;
@@ -719,6 +723,7 @@ public class GameManager : MonoBehaviour
             {
                 if (brickMap[i, (int)deleteCoordsX.y] != null)
                 {
+                    scoreManagerScript.setBricksDestroyed();
                     timeSinceLastMove = 30.0f;
                     brickMap[i, (int)deleteCoordsX.y].GetComponent<BrickManager>().deleteBrick();
                     brickMap[i, (int)deleteCoordsX.y] = null;

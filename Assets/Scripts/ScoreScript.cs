@@ -23,7 +23,12 @@ public class ScoreScript : MonoBehaviour
 
         if (timeRemaining <= 0)
         {
-            // check if the score has been met.
+            Application.Quit();
         }
+    }
+
+    public void resetTimeRemaining()
+    {
+        timeRemaining = 180.0f;
     }
 }
