@@ -55,6 +55,9 @@
   <ItemGroup>
      <Compile Include="Assets\Scripts\BrickManager.cs" />
      <Compile Include="Assets\Scripts\GameManager.cs" />
+     <Compile Include="Assets\Scripts\HintScript.cs" />
+     <Compile Include="Assets\Scripts\ScoreManager.cs" />
+     <Compile Include="Assets\Scripts\ScoreScript.cs" />
  <Reference Include="Unity.TextMeshPro.Editor">
  <HintPath>D:/Repositories/Github/MyTona/MyTona/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
  </Reference>

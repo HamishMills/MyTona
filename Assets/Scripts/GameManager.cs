@@ -17,10 +17,11 @@ public class GameManager : MonoBehaviour
     public bool finishReverse = true;
 
     // Position of the bottom left most tile.
-    private float brickPositionX = -9.0f;
+    private float brickPositionX = -10.8f;
     private float brickPositionY = -4.0f;
 
     private float reverseTimer = 0.5f;
+    private float timeSinceLastMove = 30.0f;
 
     // Distance between cursor and selected brick.
     private float cursorDistance;
@@ -28,9 +29,9 @@ public class GameManager : MonoBehaviour
     // Distance each tile needs to move. 
     // So we can * the increment number by column/row to get distance.
     [SerializeField]
-    private float xIncrement = 1.5f;
+    private float xIncrement = 1f;
     [SerializeField]
-    private float yIncrement = 1.5f;
+    private float yIncrement = 1f;
 
     private Vector3 worldMousePosition;
     private Vector3 Direction;
@@ -47,6 +48,8 @@ public class GameManager : MonoBehaviour
 
     private GameObject[,] brickMap = new GameObject[8, 8];
     private GameObject[,] futureBrickMap = new GameObject[8, 8];
+
+    private int[,] colourMap = new int[8, 8];
 
     public enum targetDirection
     {
@@ -86,6 +89,7 @@ public class GameManager : MonoBehaviour
             didMove = true;
         }
 
+        // if nothing has been destroyed then reverse the move
         if (didMove && !hasDestroyed)
         {
             if (reverseTimer < 0)
@@ -103,7 +107,20 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            // if something was destroyed
             finishReverse = true;
+        }
+
+        // if 30 seconds have passed without the player solving anything
+        // tell them where a solvable position is.
+        if (timeSinceLastMove < 0)
+        {
+            timeSinceLastMove = 30.0f;
+            Debug.Log(checkPossibleMove());
+        }
+        else
+        {
+            timeSinceLastMove -= Time.deltaTime;
         }
     }
 
@@ -139,11 +156,26 @@ public class GameManager : MonoBehaviour
                 // Instantiate a brick at incrementing positions and set colour.
                 currentBrick = Instantiate(Brick, Position, Quaternion.identity);
                 currentBrick.GetComponent<BrickManager>().setBrickType(Random.Range(1, 6));
+                //currentBrick.GetComponent<BrickManager>().setBrickType(1);
 
                 brickMap[x, y] = currentBrick;
             }
         }
         futureBrickMap = brickMap;
+    }
+
+    public void resetBoard()
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                brickMap[x, y].GetComponent<BrickManager>().deleteBrick();
+                brickMap[x, y] = null;
+            }
+        }
+        newBoard();
+        fixNewBoard();
     }
 
     void fixNewBoard()
@@ -173,6 +205,7 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
+        setColourMap();
     }
 
     Vector2 getClickedCoords(GameObject clickedObject)
@@ -516,7 +549,6 @@ public class GameManager : MonoBehaviour
         }
 
         // Horizontal
-
         for (int x = (int)brickCoord.x; x >= 0; x--)
         {
             if (brickMap[x, tempY] != null && brickMap[x, tempY].GetComponent<BrickManager>().getBrickType() == brickType)
@@ -550,9 +582,74 @@ public class GameManager : MonoBehaviour
         return new Vector2(xBricks, yBricks);
     }
 
+    // Checks the validity of future positions
+    Vector2 checkColourValidity(Vector2 brickCoord)
+    {
+        //int brickType = futureBrickMap[(int)brickCoord.x, (int)brickCoord.y].GetComponent<BrickManager>().getBrickType();
+
+        int tempX = (int)brickCoord.x;
+        int tempY = (int)brickCoord.y;
+
+        // they start at -1 because the function counts itself twice. Once counting up, once counting down.
+        int xBricks = -1;
+        int yBricks = -1;
+
+        // Vertical
+        for (int y = (int)brickCoord.y; y >= 0; y--)
+        {
+            if (colourMap[tempX, y] == colourMap[tempX, tempY])
+            {
+                yBricks = yBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int y = (int)brickCoord.y; y < 8; y++)
+        {
+            if (colourMap[tempX, y] == colourMap[tempX, tempY])
+            {
+                yBricks = yBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // Horizontal
+        for (int x = (int)brickCoord.x; x >= 0; x--)
+        {
+            if (colourMap[x, tempY] == colourMap[tempX, tempY])
+            {
+                xBricks = xBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        for (int x = (int)brickCoord.x; x < 8; x++)
+        {
+            if (colourMap[x, tempY] == colourMap[tempX, tempY])
+            {
+                xBricks = xBricks + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return new Vector2(xBricks, yBricks);
+    }
+
     // maybe have 2 delete coords. one that gets set in check validity and one that you set after you find the final solution brick.
     void destroySolvedBricks(Vector2 brickCount)
     {
+
         Vector2 currentValidityNumber;
         Vector2 newValidityNumber = new Vector2(0, 0);
 
@@ -609,6 +706,7 @@ public class GameManager : MonoBehaviour
         {
             for (int i = (int)deleteCoordsY.y; i > ((int)deleteCoordsY.y - brickCount.y); i--)
             {
+                timeSinceLastMove = 30.0f;
                 brickMap[(int)deleteCoordsY.x, i].GetComponent<BrickManager>().deleteBrick();
                 brickMap[(int)deleteCoordsY.x, i] = null;
                 hasDestroyed = true;
@@ -621,6 +719,7 @@ public class GameManager : MonoBehaviour
             {
                 if (brickMap[i, (int)deleteCoordsX.y] != null)
                 {
+                    timeSinceLastMove = 30.0f;
                     brickMap[i, (int)deleteCoordsX.y].GetComponent<BrickManager>().deleteBrick();
                     brickMap[i, (int)deleteCoordsX.y] = null;
                     hasDestroyed = true;
@@ -632,6 +731,7 @@ public class GameManager : MonoBehaviour
     // Sort through and destroy all solved bricks.
     void setDestroy()
     {
+        
         for (int y = 0; y < 8; y++)
         {
             for (int x = 0; x < 8; x++)
@@ -690,140 +790,114 @@ public class GameManager : MonoBehaviour
             }
         }
     }
+
+    void setColourMap()
+    {
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                colourMap[x, y] = brickMap[x, y].GetComponent<BrickManager>().getBrickType();
+            }
+        }
+    }
+
+    // For every position, check if there is a possible solution.
+    public Vector2 checkPossibleMove()
+    {
+        int tempInt;
+
+        for (int y = 0; y < 8; y++)
+        {
+            for (int x = 0; x < 8; x++)
+            {
+                if (y >= 7)
+                {
+                    // do nothing
+                }
+                else
+                {
+                    tempInt = colourMap[x, y];
+                    colourMap[x, y] = colourMap[x, y + 1];
+                    colourMap[x, y + 1] = tempInt;
+
+                    if ((int)checkColourValidity(new Vector2(x, y + 1)).x >= 3 || (int)checkColourValidity(new Vector2(x, y + 1)).y >= 3)
+                    {
+                        return new Vector2(x, y);
+                    }
+                    else
+                    {
+                        setColourMap();
+                        // do nothing
+                    }
+                }
+
+                if (y <= 0)
+                {
+                    // do nothing
+                }
+                else
+                {
+                    tempInt = colourMap[x, y];
+                    colourMap[x, y] = colourMap[x, y - 1];
+                    colourMap[x, y - 1] = tempInt;
+
+                    if ((int)checkColourValidity(new Vector2(x, y - 1)).x >= 3 || (int)checkColourValidity(new Vector2(x, y - 1)).y >= 3)
+                    {
+                        return new Vector2(x, y);
+                    }
+                    else
+                    {
+                        setColourMap();
+                        // do nothing
+                    }
+                }
+
+                if (x >= 7)
+                {
+                    // do nothing
+                }
+                else
+                {
+                    tempInt = colourMap[x, y];
+                    colourMap[x, y] = colourMap[x + 1, y];
+                    colourMap[x + 1, y] = tempInt;
+
+                    if ((int)checkColourValidity(new Vector2(x + 1, y)).x >= 3 || (int)checkColourValidity(new Vector2(x + 1, y)).y >= 3)
+                    {
+                        return new Vector2(x, y);
+                    }
+                    else
+                    {
+                        setColourMap();
+                        // do nothing
+                    }
+                }
+
+                if (x <= 0)
+                {
+                    // do nothing
+                }
+                else
+                {
+                    tempInt = colourMap[x, y];
+                    colourMap[x, y] = colourMap[x - 1, y];
+                    colourMap[x - 1, y] = tempInt;
+
+                    if ((int)checkColourValidity(new Vector2(x - 1, y)).x >= 3 || (int)checkColourValidity(new Vector2(x - 1, y)).y >= 3)
+                    {
+                        return new Vector2(x, y);
+                    }
+                    else
+                    {
+                        setColourMap();
+                        // do nothing
+                    }
+                }
+            }
+        }
+        newBoard();
+        fixNewBoard();
+        return new Vector2(0,0);
+    }
 }
-
-
-//void reverseMove(int targetDirection)
-//{
-//    int reverseDirection = 0;
-
-//    if (didMove == true)
-//    {
-//        if (setReverse)
-//        {
-//            Debug.Log((int)moveDirection(Direction));
-//            //0 == up
-//            if (targetDirection == 0)
-//            {
-//                reverseDirection = 1;
-//                lastBrickClicked = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y + 1];
-//            }
-//            // 1 == down
-//            else if (targetDirection == 1)
-//            {
-//                reverseDirection = 0;
-//                lastBrickClicked = brickMap[(int)lastBrickCoords.x, (int)lastBrickCoords.y - 1];
-//            }
-//            // 2 == left
-//            else if (targetDirection == 2)
-//            {
-//                reverseDirection = 3;
-//                lastBrickClicked = brickMap[(int)lastBrickCoords.x - 1, (int)lastBrickCoords.y];
-//            }
-//            // 3 == right
-//            else if (targetDirection == 3)
-//            {
-//                reverseDirection = 2;
-//                lastBrickClicked = brickMap[(int)lastBrickCoords.x + 1, (int)lastBrickCoords.y];
-//            }
-//        }
-//        if (reverseTimer < 0)
-//        {
-//            Debug.Log((int)moveDirection(Direction));
-//            //Debug.Log(getClickedCoords(lastBrickClicked));
-//            moveBrick(reverseDirection);
-//            reverseTimer = 0.5f;
-//            didMove = false;
-//        }
-//        else
-//        {
-//            reverseTimer = reverseTimer - Time.deltaTime;
-//        }
-//        setReverse = false;
-//    }
-//}
-
-
-
-
-
-
-
-
-
-//void destroySolvedBricks(Vector2 brickCount)
-//{
-//    Vector2 currentValidityNumber;
-//    Vector2 newValidityNumber = new Vector2(0, 0);
-
-//    if (brickCount.x >= 3 || brickCount.y >= 3)
-//    {
-//        if (brickCount.x > brickCount.y)
-//        {
-//            currentValidityNumber = checkValidity(new Vector2(deleteCoordsX.x, deleteCoordsX.y));
-
-//            for (int i = (int)deleteCoordsX.x; i > (int)deleteCoordsX.x - brickCount.x; i--)
-//            {
-//                if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(i, deleteCoordsX.y)).x + (int)checkValidity(new Vector2(i, deleteCoordsX.y)).y)
-//                {
-//                    // do nothing. biggest value is most valuable.
-//                }
-//                else
-//                {
-//                    newValidityNumber = new Vector2(i, deleteCoordsX.y);
-//                    currentValidityNumber = checkValidity(new Vector2(i, deleteCoordsX.y));
-//                    Debug.Log(newValidityNumber);
-//                }
-//            }
-//            //Debug.Log(deleteCoordsX);
-//            //Debug.Log(deleteCoordsY);
-//            // brickCount = checkValidity(newValidityNumber);
-//        }
-//        else if (brickCount.y > brickCount.x)
-//        {
-//            currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, deleteCoordsY.y));
-
-//            for (int i = (int)deleteCoordsY.y; i > (int)deleteCoordsY.y - brickCount.y; i--)
-//            {
-//                if ((int)currentValidityNumber.x + (int)currentValidityNumber.y >= (int)checkValidity(new Vector2(deleteCoordsY.x, i)).x + (int)checkValidity(new Vector2(deleteCoordsY.x, i)).y)
-//                {
-//                    // do nothing. biggest value is most valuable.
-
-//                }
-//                else
-//                {
-//                    newValidityNumber = new Vector2(deleteCoordsY.x, i);
-//                    currentValidityNumber = checkValidity(new Vector2(deleteCoordsY.x, i));
-//                }
-//            }
-//            //Debug.Log(deleteCoordsX);
-//            //Debug.Log(deleteCoordsY);
-//        }
-//        else
-//        {
-//            // this is the correct position.
-//        }
-//    }
-
-//    // double check that it is a possible move.
-//    if (brickCount.y >= 3)
-//    {
-//        for (int i = (int)deleteCoordsY.y; i > ((int)deleteCoordsY.y - brickCount.y); i--)
-//        {
-//            brickMap[(int)deleteCoordsY.x, i].GetComponent<BrickManager>().deleteBrick();
-//            brickMap[(int)deleteCoordsY.x, i] = null;
-//        }
-//    }
-
-//    if (brickCount.x >= 3)
-//    {
-//        for (int i = (int)deleteCoordsX.x; i > ((int)deleteCoordsX.x - brickCount.x); i--)
-//        {
-//            if (brickMap[i, (int)deleteCoordsX.y] != null)
-//            {
-//                brickMap[i, (int)deleteCoordsX.y].GetComponent<BrickManager>().deleteBrick();
-//                brickMap[i, (int)deleteCoordsX.y] = null;
-//            }
-//        }
-//    }
-//}
